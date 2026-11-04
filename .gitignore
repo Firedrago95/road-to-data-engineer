@@ -1,0 +1,11 @@
+# Environment & Internal Coach Rules
+GEMINI.md
+.env
+
+# OS Files
+.DS_Store
+Thumbs.db
+
+# Docker & Temporary Data
+*.log
+.docker/

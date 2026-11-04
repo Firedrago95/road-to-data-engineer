@@ -1,0 +1,13 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: lab-idempotent-db
+    environment:
+      POSTGRES_USER: de_user
+      POSTGRES_PASSWORD: de_password
+      POSTGRES_DB: lab_db
+    ports:
+      # 로컬 5432가 터널링으로 사용 중이므로 충돌 방지를 위해 5433 사용
+      - "5433:5432"
+    volumes:
+      - ./init.sql:/docker-entrypoint-initdb.d/init.sql:ro
