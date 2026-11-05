@@ -1,0 +1,6 @@
+- name: Daily System Check and Maintenance
+  hosts: targets
+  gather_facts: no
+  tasks:
+    - name: Run healthcheck task
+      command: echo "Health check OK on target host"
