@@ -6,17 +6,17 @@
 
 ## 디렉토리 구조
 
-- `pipeline-consistency/`: 데이터 정합성, 배치 멱등성, 재시도 및 스키마 변경 대응
-- `infra-reliability/`: 고가용성, 자동 장애 조치, 네트워크 지연 및 자원 부족 대응
-- `storage-optimization/`: 데이터베이스 샤딩, 파티셔닝, 인덱스 및 데이터 수명 관리
-- `streaming-observability/`: 메시지 큐, 처리 지연 병목, 모니터링 및 알람
+- `pipeline/`: 데이터 정합성, 배치 멱등성, 재시도 및 스키마 변경 대응
+- `infra/`: 고가용성, 자동 장애 조치, 네트워크 지연 및 자원 부족 대응
+- `storage/`: 데이터베이스 샤딩, 파티셔닝, 인덱스 및 데이터 수명 관리
+- `streaming/`: 메시지 큐, 처리 지연 병목, 모니터링 및 알람
 
 ## 실험 목록
 
 | 번호 | 분류 | 주제 | 핵심 내용 | 기술 스택 | 링크 |
 |:---:|---|---|---|---|:---:|
-| 01 | 파이프라인 정합성 | 멱등한 데이터 파이프라인 설계 | 현재 시각 참조 배제, 충돌 무시의 갱신 누락 문제, 트랜잭션 기반 삭제 후 삽입 | PostgreSQL 16, Docker | [보기](./pipeline-consistency/01-idempotent-batch/README.md) |
-| 02 | 인프라 신뢰성 | cron과 Ansible의 침묵 실패 분석 | 출력 리다이렉션으로 인한 에러 은폐, PLAY RECAP과 종료 코드($?)의 차이, 실패 코드 전파 | Ansible, Bash, Docker | [보기](./infra-reliability/01-ansible-cron-silent-failure/README.md) |
+| 01 | 파이프라인 | 멱등한 데이터 파이프라인 설계 | 현재 시각 참조 배제, 충돌 무시의 갱신 누락 문제, 트랜잭션 기반 삭제 후 삽입 | PostgreSQL 16, Docker | [보기](./pipeline/01-idempotent-batch/README.md) |
+| 02 | 인프라 | cron과 Ansible의 침묵 실패 분석 | 출력 리다이렉션으로 인한 에러 은폐, PLAY RECAP과 종료 코드($?)의 차이, 실패 코드 전파 | Ansible, Bash, Docker | [보기](./infra/01-ansible-cron-silent-failure/README.md) |
 
 ## 기록 원칙
 
