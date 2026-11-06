@@ -1,0 +1,7 @@
+notifiers:
+  - name: Teams-Alert
+    type: webhook
+    uid: teams-1
+    is_default: true
+    settings:
+      url: ${TEAMS_WEBHOOK_URL_TYPO}

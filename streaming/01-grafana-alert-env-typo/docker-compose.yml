@@ -1,0 +1,12 @@
+services:
+  grafana:
+    image: grafana/grafana-oss:11.1.3
+    container_name: lab-grafana
+    ports:
+      - "3000:3000"
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+      - GF_USERS_ALLOW_SIGN_UP=false
+      - TEAMS_WEBHOOK_URL=https://httpbin.org/post
+    volumes:
+      - ./provisioning:/etc/grafana/provisioning:ro
