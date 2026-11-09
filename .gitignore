@@ -9,3 +9,5 @@ Thumbs.db
 # Docker & Temporary Data
 *.log
 .docker/
+__pycache__/
+*.pyc

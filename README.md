@@ -18,10 +18,12 @@
 | 01 | 파이프라인 | 멱등한 데이터 파이프라인 설계 | 현재 시각 참조 배제, 충돌 무시의 갱신 누락 문제, 트랜잭션 기반 삭제 후 삽입 | PostgreSQL 16, Docker | [보기](./pipeline/01-idempotent-batch/README.md) |
 | 02 | 인프라 | cron과 Ansible의 침묵 실패 분석 | 출력 리다이렉션으로 인한 에러 은폐, PLAY RECAP과 종료 코드($?)의 차이, cron 한계와 스크립트 레벨 감시 | Ansible, Bash, Docker | [보기](./infra/01-ansible-cron-silent-failure/README.md) |
 | 03 | 관측/알람 | Grafana 알람 설정 오타와 조기 실패 | 환경 변수 오타 시 빈 값 치환 및 기동 실패(Fail-Fast), 컴포넌트별 실패 전략 차이 | Grafana 11, Docker | [보기](./streaming/01-grafana-alert-env-typo/README.md) |
+| 04 | 스트리밍/분산큐 | Celery 워커 네트워크 단절과 침묵의 행 | TCP Half-Open과 SO_KEEPALIVE 부재, 경쟁 소비자 패턴에 의한 배치 성공 착시, 카나리 헬스체크와 메트릭 감시 | Airflow 2.10, Celery, Redis, Docker | [보기](./streaming/02-celery-worker-silent-hang/README.md) |
 
 ## 기록 원칙
 
 1. 코드를 실행하기 전 결과를 먼저 예상하고 이유를 적습니다.
-2. 도커 환경에서 실제 쿼리와 출력 결과로 검증합니다.
-3. 실험으로 확인하지 못한 기술적 한계를 명시합니다.
-4. 매일의 진행 요약은 `log.md`에 한 줄로 기록합니다.
+2. 데이터 정합성, 트랜잭션, SQL 등 꼭 알아야 하는 핵심 코드는 직접 작성합니다.
+3. 도커 환경에서 실제 쿼리와 출력 결과로 검증합니다.
+4. 실험으로 확인하지 못한 기술적 한계를 명시합니다.
+5. 매일의 진행 요약은 `log.md`에 한 줄로 기록합니다.
