@@ -155,8 +155,107 @@ Celery는 관리/제어 명령(Ping/Pong)용 Pub/Sub 채널과 실제 작업 수
 - **장점**: Flower나 프로세스가 "정상"이라고 보고하더라도, 실제 작업 수신 채널이 굳었는지를 100% 확증할 수 있는 가장 확실한 방식. 미수행 시 컨테이너 자동 재시작 연계 가능.
 - **단점**: 별도의 카나리 DAG 또는 스케줄러 로직 구현 필요.
 
-## 6. 결론 및 한계점
+## 6. 결론 및 한계점 (1차 실험: 2026-11-09)
 
 1. 워커와 큐 사이의 물리적 네트워크 단절 시 네트워크 연결이 복귀되어도, Celery 워커와의 ping/pong 연결만 복구되고 실제 작업 전달 연결은 끊긴 채로 무한히 대기하는 사일런트 장애가 발생한다.
 2. 제어 통로와 데이터 통로가 분리된 구조에서, 데이터 통로는 정상 종료 신호(FIN/RST)가 없으면 '종료'를 인식하지 못하고 ESTABLISHED 상태로 무한 대기하는 TCP Half-Open에 빠진다.
 3. 이 실험에서는 SO_KEEPALIVE 설정이 실제로 동작하여 Half-Open 연결을 스스로 강제 종료하고 워커가 자동 재연결에 성공하는 원리까지는 실측으로 검증하지 못했다.
+
+## 7. 2차 심화 실험: 굳은 소켓의 커널 타이머 해부와 `socket_keepalive` 자가 복구 실측 (2026-11-10)
+
+### 1. 2차 실험 전 예측 (사용자 사전 작성)
+1. 연결 개수와 복구 예상: 워커는 컨트롤 라인과 데이터 라인 2개를 쓸 것이고, 컨트롤 라인만 확인하면 안 살아날 것 같다.
+2. 차단 직후 타이머 변화: 1초마다 말을 거는 그룹 A는 `02`(Keepalive)가 될 것 같고, 아무 말 안 하는 그룹 B는 계속 `00`일 것이다.
+3. 15분(15회 재시도) 경과 후: 재전송하던 소켓은 커널이 끊을 것 같고, 아무 말 안 하던 소켓은 그대로 그냥 있을 것이다.
+4. `socket_keepalive` 활성화 후: 타이머 번호가 `02`로 바뀌고 잠자던 연결도 커널이 끊어줄 것 같다.
+
+### 2. 실험 및 실측 결과
+
+#### 실험 2-1: 워커의 Redis 연결 구조와 기본 타이머(`tr`) 확인
+`redis-cli CLIENT LIST`와 워커의 `/proc/net/tcp`를 대조하여 워커 1대(`172.23.0.6`)가 브로커와 맺는 실제 소켓 구성을 확인합니다.
+
+```bash
+docker exec airflow-redis redis-cli CLIENT LIST | grep 172.23.0.6
+docker exec airflow-worker-1 cat /proc/net/tcp
+```
+```text
+# [그룹 A] 주기적으로 패킷을 주고받는 활성 소켓 (idle=1초)
+addr=172.23.0.6:48508 ... idle=1     flags=b cmd=brpop    (데이터 수신 라인)
+addr=172.23.0.6:48560 ... idle=1     flags=N cmd=publish  (워커 하트비트 발행 라인)
+addr=172.23.0.6:48542 ... idle=1     flags=P cmd=ping     (Pub/Sub 제어 수신 라인)
+addr=172.23.0.6:48576 ... idle=1     flags=P cmd=ping     (Pub/Sub 제어 수신 라인)
+
+# [그룹 B] 부팅 시 초기 등록 후 커넥션 풀에 보관된 유휴 소켓 (idle=82905초)
+addr=172.23.0.6:48520 ... idle=82905 flags=N cmd=ping
+addr=172.23.0.6:48528 ... idle=82905 flags=N cmd=ping
+addr=172.23.0.6:48536 ... idle=82638 flags=N cmd=smembers
+addr=172.23.0.6:48554 ... idle=82904 flags=N cmd=sadd
+addr=172.23.0.6:48590 ... idle=82904 flags=N cmd=sadd
+
+# [/proc/net/tcp 타이머(tr) 상태]
+ 8: 060017AC:ACEA 020017AC:1538 01 00000000:00000000 02:0005318B  (Postgres 5432는 tr=02 Keepalive 켜짐)
+22: 060017AC:BD7C 030017AC:18EB 01 00000000:00000000 00:00000000  (Redis 6379는 10개 모두 tr=00 타이머 꺼짐)
+```
+- 실측: 워커 1대는 커넥션 풀을 포함해 총 10개의 소켓을 열어두며, 메타DB(Postgres)와 달리 Redis 연결 10개는 모두 `tr = 00`(타이머 없음) 상태임.
+
+#### 실험 2-2: 패킷 블랙홀 주입 후 5분 vs 18분 경과 시 양측 상태 비교
+방화벽으로 Redis 트래픽을 차단한 뒤 5분 시점과 18분(`tcp_retries2 = 15` 초과) 시점의 워커 소켓 표와 Redis 클라이언트 명부를 비교합니다.
+
+```bash
+docker exec -u 0 airflow-worker-1 iptables -A OUTPUT -p tcp --dport 6379 -j DROP
+docker exec -u 0 airflow-worker-1 iptables -A INPUT -p tcp --sport 6379 -j DROP
+```
+```text
+# [차단 5분 후 /proc/net/tcp]
+ 1: 060017AC:BDAA 030017AC:18EB 01 00000000:00000000 00:00000000 ... timeout 0   (유휴 소켓: tr=00 방치)
+ 8: 060017AC:BD7C 030017AC:18EB 01 00000056:00000000 04:00001EB0 ... timeout 11  (brpop: 86B 막힘, 11회째 재전송)
+10: 060017AC:BDB0 030017AC:18EB 01 000002F5:00000000 04:00001516 ... timeout 11  (publish: 757B 막힘, 11회째 재전송)
+
+# [차단 18분 후 /proc/net/tcp]
+- BD7C(brpop)와 BDB0(publish)는 15회 재전송 후 커널이 강제 종료하여 목록에서 소멸함.
+- 나머지 유휴 소켓 7개(tx_queue=0, tr=00)는 여전히 st=01(ESTABLISHED)로 남아 있음.
+
+# [차단 18분 후 Redis CLIENT LIST]
+- Redis 자체 tcp-keepalive(300초)에 의해 172.23.0.6(worker-1) 연결 10개가 모두 정리되어 0건 조회됨.
+```
+- 실측: 송신 버퍼에 데이터가 남은(`Send-Q > 0`) 소켓은 재전송 타이머(`01`/`04`)가 작동해 약 15분 뒤 소멸하지만, `Send-Q = 0`인 소켓들은 Redis에서 이미 삭제되었음에도 워커 혼자 `ESTABLISHED`로 붙들고 있는 반쪽 연결(Half-Open)로 영구 방치됨.
+
+#### 실험 2-3: `socket_keepalive` 활성화 및 자가 복구 확인
+Airflow는 `[celery_broker_transport_options]` 섹션을 별도로 읽으므로(`conf.getsection("celery_broker_transport_options")`), `docker-compose.yaml`에 `AIRFLOW__CELERY_BROKER_TRANSPORT_OPTIONS__SOCKET_KEEPALIVE: 'true'`와 커널 Keepalive 단축 설정(15초 대기 + 5초 간격 × 3회 = 30초)을 적용하고 재현합니다.
+
+```bash
+docker exec airflow-worker-1 ss -tno state established dport = :6379
+```
+```text
+# [적용 직후 ss -tno: 10개 소켓 모두 keepalive 타이머(tr=02) 활성화]
+Recv-Q Send-Q Local Address:Port  Peer Address:Port
+0      0         172.23.0.6:46866   172.23.0.3:6379 timer:(keepalive,2.399ms,0)
+... (10개 모두 timer:(keepalive) 작동)
+
+# [iptables DROP 차단 35초 후 ss -tno]
+Recv-Q Send-Q Local Address:Port  Peer Address:Port
+0      753       172.23.0.6:46864   172.23.0.3:6379 timer:(persist,20sec,8)
+0      86        172.23.0.6:46824   172.23.0.3:6379 timer:(persist,46sec,8)
+- Send-Q = 0 이던 유휴 소켓 8개는 30초 만에 keepalive 타이머가 모두 강제 종료시켜 소멸함.
+
+# [iptables -F 해제 후 워커 로그 및 소켓 복구]
+[2026-11-10 11:29:08,275: INFO/MainProcess] Connected to redis://redis:6379/0
+[2026-11-10 11:29:09,291: INFO/MainProcess] mingle: sync complete
+[2026-11-10 11:31:00,533: INFO/ForkPoolWorker-15] Running <TaskInstance: check_worker_hostname.print_hostname> on host worker-1
+[2026-11-10 11:31:00,743: INFO/ForkPoolWorker-15] Task succeeded in 0.351s
+```
+
+### 3. 2차 실험 결론 및 한계점 (사용자 작성)
+
+1. keepAlive 설정이 켜져있으면 소켓 응답이 일정시간이 없으면 다시 패킷을 보내 '재연결'을 시도 하는것으로 예측했지만, 실제로는 연결을 '끊는다.'는걸 알게되었다. 워커단(코드)에서 소켓 연결이 끊어지면 재연결을 시도하도록 되어있기때문에 재연결 되는것
+2. 서버간 정기적인 연결을 유지하는 상황에선 keepAlive 연결을 켜 예상치못한 네트워크 단절에도 연결이 복구되면 자연스럽게 재 연결된다.
+3. 워커가 쉴때 이런 상황이 생긴건데 작업이 있을때는 어떻게 되려나 (한창 작업을 실행하는 도중 네트워크 단절과 재연결이 일어났을 때 실행 중이던 작업이 어떻게 처리되는지는 이번 실험으로 확인하지 못했다.)
+
+### 4. 운영 적용 시 권장 조합: `socket_keepalive` + 처리량 편중 알람
+
+1. **사전 자동 복구 (`socket_keepalive` 활성화)**:
+   - 일시적인 네트워크 단절 시 커널이 유휴 반쪽 연결(`Send-Q = 0`)을 강제 종료하여 워커가 사람 개입 없이 스스로 재연결하도록 만듭니다.
+   - 단, 너무 짧은 주기는 일시적 네트워크 지연에도 재연결 폭풍(Connection Storm)을 유발할 수 있으므로 운영 환경에서는 수분 단위(예: 대기 120초, 간격 15초, 재시도 5회)로 설정합니다.
+2. **사후 증상 감시 (전체 처리량 대비 특정 워커 처리량 0건 알람)**:
+   - 네트워크 연결은 정상이지만 워커 내부 데드락, 디스크 가득 참, 작업 슬롯 고갈 등으로 인해 일을 가져가지 못하는 좀비 상태는 `socket_keepalive`만으로 복구할 수 없습니다.
+   - 이때 단순히 특정 워커의 처리량이 0건인 조건만 걸면 배치가 없는 시간대에 거짓 알람(오탐)이 발생하므로, **"클러스터 전체 처리량이 기준치 이상인데 특정 워커만 처리량이 0건인 상태"**를 복합 조건으로 걸어두는 것이 실무 표준입니다.

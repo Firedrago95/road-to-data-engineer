@@ -6,4 +6,5 @@
 2026-11-05 | cron과 Ansible 침묵의 실패 분석 (cron 한계와 스크립트 레벨 종료 코드 감시) | 45분 | PLAY RECAP 숫자(개수)와 OS 종료 코드($?)의 차이 | 실제 crontab 로깅 동작 및 Ansible SSH 키 인증 구성
 2026-11-06 | Grafana 알람 프로비저닝 환경변수 오타와 조기 실패(Fail-Fast) | 35분 | Alerting(즉사)과 Datasource/Dashboard(부분 가용)의 실패 전략 차이 이해 | Alerting.yaml의 세부 라우팅 및 템플릿 스키마 규칙
 2026-11-09 | Celery 워커 네트워크 단절 후 침묵의 장애 원인 분석 (TCP Half-Open과 사일런트 행) | 60분 | 단순 disconnect와 물리 패킷 DROP(블랙홀) 간의 커널 에러 유무 차이 | SO_KEEPALIVE 및 socket_timeout 적용 시 Half-Open 소켓 자동 복구 실측
+2026-11-10 | Celery 굳은 소켓 커널 타이머(재전송 vs Keepalive) 해부 및 socket_keepalive 자가 복구 검증 | 85분 | 커널 Keepalive의 역할(재연결이 아니라 소켓 강제 종료를 통한 워커 재연결 루프 깨우기)과 송신 버퍼 유무별 타이머 차이 | 워커가 작업을 한창 실행 중일 때 네트워크 단절이 발생하면 실행 중인 작업은 어떻게 처리되는가
 

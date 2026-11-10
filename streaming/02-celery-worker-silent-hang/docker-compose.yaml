@@ -87,6 +87,13 @@ services:
     hostname: worker-1
     command: celery worker
     restart: always
+    environment:
+      <<: *airflow-common-env
+      AIRFLOW__CELERY_BROKER_TRANSPORT_OPTIONS__SOCKET_KEEPALIVE: 'true'
+    sysctls:
+      - net.ipv4.tcp_keepalive_time=15
+      - net.ipv4.tcp_keepalive_intvl=5
+      - net.ipv4.tcp_keepalive_probes=3
     cap_add:
       - NET_ADMIN
     depends_on:
