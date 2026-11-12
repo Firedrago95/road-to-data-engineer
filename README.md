@@ -15,11 +15,11 @@
 
 | 번호 | 분류 | 주제 | 핵심 내용 | 기술 스택 | 링크 |
 |:---:|---|---|---|---|:---:|
-| 01 | 파이프라인 | 멱등한 데이터 파이프라인 설계 | 실행 날짜 고정과 한 트랜잭션 지우고 넣기로 재실행 시 데이터 꼬임 방지 | PostgreSQL 16, Docker | [보기](./pipeline/01-idempotent-batch/README.md) |
-| 02 | 인프라 | cron과 Ansible의 침묵 실패 분석 | 로그 파일에 가려진 실패를 종료 코드($?)로 잡고, cron 대신 스크립트 안에서 감시 | Ansible, Bash, Docker | [보기](./infra/01-ansible-cron-silent-failure/README.md) |
-| 03 | 관측/알람 | Grafana 알람 설정 오타와 조기 실패 | 알람 주소 환경변수 오타 시 조용히 넘기지 않고 서버를 바로 멈추는 동작 확인 | Grafana 11, Docker | [보기](./streaming/01-grafana-alert-env-typo/README.md) |
-| 04 | 스트리밍/분산큐 | Celery 워커 네트워크 단절과 침묵의 행 (1·2차) | 랜선 단절 뒤 워커가 영구 대기하는 원인과 Keepalive로 소켓을 끊어 자동 복구하는 과정 확인 | Airflow 2.10, Celery, Redis, Docker | [보기](./streaming/02-celery-worker-silent-hang/README.md) |
-| 05 | 스토리지/인덱스 | MongoDB `$or` 전체 스캔과 복합 인덱스 조건 설계 | `$or` 조건 중 하나만 인덱스 없어도 전체 스캔되는 원인과, 15가지 조합 모두 인덱스 타게 개선 | MongoDB 5.0, Node.js, Docker | [보기](./storage/01-mongo-or-collscan/README.md) |
+| 01 | `pipeline` | 멱등한 데이터 파이프라인 설계 | 실행 날짜 고정과 한 트랜잭션 지우고 넣기로 재실행 시 데이터 꼬임 방지 | PostgreSQL 16, Docker | [보기](./pipeline/01-idempotent-batch/README.md) |
+| 02 | `infra` | cron과 Ansible의 침묵 실패 분석 | 로그 파일에 가려진 실패를 종료 코드($?)로 잡고, cron 대신 스크립트 안에서 감시 | Ansible, Bash, Docker | [보기](./infra/01-ansible-cron-silent-failure/README.md) |
+| 03 | `streaming` | Grafana 알람 설정 오타와 조기 실패 | 알람 주소 환경변수 오타 시 조용히 넘기지 않고 서버를 바로 멈추는 동작 확인 | Grafana 11, Docker | [보기](./streaming/01-grafana-alert-env-typo/README.md) |
+| 04 | `streaming` | Celery 워커 네트워크 단절과 침묵의 행 (1·2차) | 랜선 단절 뒤 워커가 영구 대기하는 원인과 Keepalive로 소켓을 끊어 자동 복구하는 과정 확인 | Airflow 2.10, Celery, Redis, Docker | [보기](./streaming/02-celery-worker-silent-hang/README.md) |
+| 05 | `storage` | MongoDB `$or` 전체 스캔과 복합 인덱스 조건 설계 | `$or` 조건 중 하나만 인덱스 없어도 전체 스캔되는 원인과, 15가지 조합 모두 인덱스 타게 개선 | MongoDB 5.0, Node.js, Docker | [보기](./storage/01-mongo-or-collscan/README.md) |
 
 ## 기록 원칙
 
