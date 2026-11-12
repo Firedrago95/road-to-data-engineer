@@ -1,0 +1,13 @@
+{
+  "name": "mongo-or-collscan-lab",
+  "version": "1.0.0",
+  "type": "module",
+  "private": true,
+  "scripts": {
+    "seed": "node seed.js",
+    "verify": "node verify.js"
+  },
+  "dependencies": {
+    "mongodb": "^6.10.0"
+  }
+}
