@@ -32,7 +32,13 @@ async function getWinningPlan(collection, query) {
 }
 
 function hasCollscan(planNode) {
-  throw new Error('hasCollscan 함수를 직접 구현해 주세요.');
+  if (planNode === null || planNode === undefined) return false;
+  if (planNode.stage === 'COLLSCAN') return true;
+
+  if (Array.isArray(planNode.inputStages)) {
+    return planNode.inputStages.some(i => hasCollscan(i));
+  }
+  return hasCollscan(planNode.inputStage);
 }
 
 async function verifyLegacyQueries(collection, combinations) {
@@ -46,7 +52,38 @@ async function verifyLegacyQueries(collection, combinations) {
 }
 
 async function verifySafeQueries(collection, combinations) {
-  throw new Error('verifySafeQueries 함수를 직접 구현해 주세요.');
+  console.log('\n=== [2] 안전한 방식(buildSafeOrQuery 15조합 확인 ===');
+  const acceptedRows = [];
+  let collscanCount = 0;
+  for (const item of combinations) {
+    try {
+      const query = buildSafeOrQuery([item.row]);
+      const plan = await getWinningPlan(collection, query);
+      const isCollscan = hasCollscan(plan);
+      const result = isCollscan ? 'COLLSCAN' : 'IXSCAN';
+      if (isCollscan) {
+        collscanCount += 1;
+      } else {
+        acceptedRows.push(item.row);
+      }
+      console.log(`- ${item.label.padEnd(22)} => ${result}`);
+    } catch (err) {
+      console.log(`- ${item.label.padEnd(22)} => 거절됨 (${err.message})`);
+    }
+  }
+  
+  if (acceptedRows.length > 0) {
+    const query = buildSafeOrQuery(acceptedRows);
+    const plan = await getWinningPlan(collection, query);
+    const isCollscan = hasCollscan(plan);
+    console.log(`\n통과된 ${acceptedRows.length}개 행을 하나의 $or로 묶은 결과 => ${isCollscan ? 'COLLSCAN' : 'IXSCAN'}`);
+    if (isCollscan) {
+      collscanCount += 1;
+    }
+  }
+  if (collscanCount > 0 || acceptedRows.length === 0) {
+    process.exitCode = 1;
+  }
 }
 
 async function main() {

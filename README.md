@@ -19,6 +19,7 @@
 | 02 | 인프라 | cron과 Ansible의 침묵 실패 분석 | 출력 리다이렉션으로 인한 에러 은폐, PLAY RECAP과 종료 코드($?)의 차이, cron 한계와 스크립트 레벨 감시 | Ansible, Bash, Docker | [보기](./infra/01-ansible-cron-silent-failure/README.md) |
 | 03 | 관측/알람 | Grafana 알람 설정 오타와 조기 실패 | 환경 변수 오타 시 빈 값 치환 및 기동 실패(Fail-Fast), 컴포넌트별 실패 전략 차이 | Grafana 11, Docker | [보기](./streaming/01-grafana-alert-env-typo/README.md) |
 | 04 | 스트리밍/분산큐 | Celery 워커 네트워크 단절과 침묵의 행 (1·2차) | TCP Half-Open과 커널 타이머(재전송 vs Keepalive) 해부, `socket_keepalive` 자가 복구 실측, 처리량 편중 감시 | Airflow 2.10, Celery, Redis, Docker | [보기](./streaming/02-celery-worker-silent-hang/README.md) |
+| 05 | 스토리지/인덱스 | MongoDB `$or` 전체 스캔과 복합 인덱스 조건 설계 | `$or` 일부 갈래 인덱스 누락 시 `COLLSCAN` 전이, `ids.*` 조건 통일 및 선두 컬럼 누락 조합 차단, 15조합 자동 검증 | MongoDB 5.0, Node.js, Docker | [보기](./storage/01-mongo-or-collscan/README.md) |
 
 ## 기록 원칙
 
