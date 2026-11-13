@@ -1,0 +1,10 @@
+services:
+  postgres:
+    image: postgres:16
+    container_name: lab-pg-contention
+    environment:
+      POSTGRES_USER: lab
+      POSTGRES_PASSWORD: lab
+      POSTGRES_DB: labdb
+    ports:
+      - "5433:5432"

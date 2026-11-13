@@ -20,6 +20,7 @@
 | 03 | `streaming` | Grafana 알람 설정 오타와 조기 실패 | 알람 주소 환경변수 오타 시 조용히 넘기지 않고 서버를 바로 멈추는 동작 확인 | Grafana | [보기](./streaming/01-grafana-alert-env-typo/README.md) |
 | 04 | `streaming` | Celery 워커 네트워크 단절과 침묵의 행 (1·2차) | 랜선 단절 뒤 워커가 영구 대기하는 원인과 Keepalive로 소켓을 끊어 자동 복구하는 과정 확인 | Airflow, Celery, Redis | [보기](./streaming/02-celery-worker-silent-hang/README.md) |
 | 05 | `storage` | MongoDB `$or` 전체 스캔과 복합 인덱스 조건 설계 | `$or` 조건 중 하나만 인덱스 없어도 전체 스캔되는 원인과, 15가지 조합 모두 인덱스 타게 개선 | MongoDB, Node.js | [보기](./storage/01-mongo-or-collscan/README.md) |
+| 06 | `storage` | PostgreSQL 대용량 읽기·쓰기 동시 실행과 MVCC | `UPDATE`·`INSERT`와 `SELECT` 동시 실행 시 락 대기 없이 자원 경합으로 느려지는 동작 확인 | PostgreSQL, Docker | [보기](./storage/02-pg-read-write-contention/README.md) |
 
 ## 기록 원칙
 

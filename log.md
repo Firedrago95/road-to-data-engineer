@@ -9,4 +9,5 @@
 2026-11-10 | Celery 굳은 소켓 커널 타이머(재전송 vs Keepalive) 해부 및 socket_keepalive 자가 복구 검증 | 85분 | 커널 Keepalive의 역할(재연결이 아니라 소켓 강제 종료를 통한 워커 재연결 루프 깨우기)과 송신 버퍼 유무별 타이머 차이 | 워커가 작업을 한창 실행 중일 때 네트워크 단절이 발생하면 실행 중인 작업은 어떻게 처리되는가
 2026-11-11 | MongoDB $or 전체 스캔(COLLSCAN) 원리 확인 및 15조합 검증 환경 구축 (1부) | 65분 | Node.js 첫 작성 부담과 피로로 인해 개선 조건 함수·검증 테스트 구현을 다음 세션으로 분할 | 15가지 입력 조합 중 복합 인덱스를 탈 수 있는 조건 설계와 거절 조합 검증(hasCollscan, buildSafeOrQuery 구현)
 2026-11-12 | MongoDB $or 전체 스캔 검증 및 복합 인덱스 조건 설계 완성 (2부) | 95분 | Node.js 문법(hasCollscan, try/catch) 적응과 문서 내 다중 키 스키마(id/ids/key_object) 맥락 이해 | NoSQL이 한 문서 안의 중첩 필드(ids.*) 일부만 골라 B-Tree 인덱스를 저장하고 탐색하는 내부 구조
+2026-11-13 | PostgreSQL 대용량 읽기·쓰기 동시 실행 시 락 경합 vs 자원 경합(MVCC) 검증 | 55분 | 읽기 S락·쓰기 X락으로 락 대기가 발생할 것이라는 초기 예측과 GROUP BY/UPDATE 문법 오류 | UPDATE + UPDATE(동일 행 동시 수정)와 DDL(TRUNCATE 등) 상황에서 MVCC와 락 경합 동작 검증
 
