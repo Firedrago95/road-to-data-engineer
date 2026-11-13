@@ -110,4 +110,13 @@ Time: 185.599 ms
 1. `UPDATE` 문과 `SELECT` 문은 MVCC로 인해 동시 실행 시 락 경합이 발생하지 않는다. 리소스 경합은 발생한다.
 2. `INSERT` 문과 `SELECT` 문은 트랜잭션 격리 수준으로 인해 락 경합이 생기지 않는다.
 3. 이 실험으로 확인 못한 것: "그럼 락 경합이 발생하는 경우는 언제지? `UPDATE + UPDATE`도 MVCC 논리에 따르면 행만 더 만들면 되는 거 같은데"
-   - (보충 확인: 같은 행을 동시에 `UPDATE`할 때는 데이터 유실(Lost Update)을 막기 위해 선행 트랜잭션이 행 단위 락을 잡고 후행 트랜잭션은 커밋/롤백 전까지 대기함. `TRUNCATE`/`ALTER` 등 DDL과 겹치는 경우도 본 실험 범위 밖으로 남겨둠.)
+
+### 추가 정리: PostgreSQL 락 경합 조건 (세션 후속 문답)
+
+> "일단 락 대기 걸리면 무조건 앞 작업(`COMMIT` 또는 `ROLLBACK`) 끝나야 다시 시작하는구나."
+
+- `SELECT` ↔ `INSERT` / `UPDATE`: MVCC 스냅샷 덕분에 **락 대기 없음** (디스크/CPU 자원 경합만 발생)
+- `UPDATE` ↔ `UPDATE`: **같은 행**이 단 하나라도 겹치면 앞 트랜잭션이 `COMMIT` 또는 `ROLLBACK`될 때까지 **락 대기** (다른 행이면 동시 실행)
+- `INSERT` ↔ `INSERT`: 평소엔 **락 대기 없음**, 단 **같은 PK/UNIQUE 키**를 동시에 넣을 때만 앞 트랜잭션 종료 시까지 **락 대기**
+- DDL(`TRUNCATE`, `ALTER TABLE`, `DROP` 등) ↔ `SELECT`: 테이블 전체 락(`ACCESS EXCLUSIVE`)으로 인해 **`SELECT`도 대기**
+- 예외: 데드락(Deadlock) 감지 또는 `lock_timeout` 초과 시에는 대기하지 않고 에러로 즉시 중단됨
